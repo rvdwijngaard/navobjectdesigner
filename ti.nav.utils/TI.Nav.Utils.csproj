@@ -45,24 +45,27 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CommandRunner.cs" />
+    <Compile Include="Helpers\CommandRunner.cs" />
     <Compile Include="Dto\ExportRequest.cs" />
     <Compile Include="Dto\CompileRequest.cs" />
     <Compile Include="Dto\ImportRequest.cs" />
     <Compile Include="Exceptions\CompilationException.cs" />
+    <Compile Include="Interfaces\IActionResponse.cs" />
     <Compile Include="Interfaces\ICommandRunner.cs" />
-    <Compile Include="Interfaces\IObjectDesignerRequest.cs" />
+    <Compile Include="Interfaces\IObjectDesignerConfig.cs" />
     <Compile Include="Interfaces\IUtilities.cs" />
     <Compile Include="Exceptions\ObjectDesignerException.cs" />
+    <Compile Include="ObjectDesignerConfig.cs" />
     <Compile Include="ObjectDesignerFactory.cs" />
     <Compile Include="Interfaces\IObjectDesigner.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Utilities.cs" />
+    <Compile Include="Helpers\Utilities.cs" />
     <Compile Include="Versions\GenericObjectDesigner.cs" />
     <Compile Include="Versions\Nav2013.cs" />
     <Compile Include="Versions\Nav2013R2.cs" />
     <Compile Include="Versions\Nav2015.cs" />
     <Compile Include="Versions\Classic.cs" />
+    <Compile Include="Versions\PowershellStub.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

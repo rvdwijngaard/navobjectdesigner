@@ -7,20 +7,20 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TI.Nav.Utils
+namespace TI.Nav.Utils.Helpers
 {
     public class CommandRunner : ICommandRunner
     {
-        public string RunCommand(IObjectDesignerRequest request, string command)        
+        public string RunCommand(IObjectDesignerConfig config, string command)        
         {
-            if (!File.Exists(request.Path))
-                throw new FileNotFoundException(string.Format("The path for the Micorosoft Dynamics NAV Object Designer does not exist [{0}]", request.ExecPath));
+            if (!File.Exists(config.ExecPath))
+                throw new FileNotFoundException(string.Format("The path for the Micorosoft Dynamics NAV Object Designer does not exist [{0}]", config.ExecPath));
 
             string logFile = Utilities.GetTempFileName(System.Threading.Thread.CurrentThread.ManagedThreadId.ToString());
 
             string arguments = String.Format("{0},logfile=\"{1}\"",command, logFile);
 
-            System.Diagnostics.ProcessStartInfo pInfo = new ProcessStartInfo(request.ExecPath, arguments);
+            System.Diagnostics.ProcessStartInfo pInfo = new ProcessStartInfo(config.ExecPath, arguments);
 
             pInfo.WindowStyle = ProcessWindowStyle.Hidden;
             pInfo.CreateNoWindow = true;

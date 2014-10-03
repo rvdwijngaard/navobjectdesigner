@@ -4,11 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TI.Nav.Utils
+namespace TI.Nav.Utils.Versions
 {
     public class Classic : IObjectDesigner
     {
-        public Classic(IObjectDesignerRequest request)
+        public Classic(IObjectDesignerConfig request)
         {
 
         }       

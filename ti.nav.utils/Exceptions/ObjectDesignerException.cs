@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TI.Nav.Utils
+namespace TI.Nav.Utils.Exceptions
 {
     public class ObjectDesignerException : Exception
     {

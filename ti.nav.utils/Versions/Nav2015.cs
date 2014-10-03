@@ -4,11 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TI.Nav.Utils
+namespace TI.Nav.Utils.Versions
 {
     public class Nav2015 : GenericObjectDesigner
     {        
-        public Nav2015(IObjectDesignerRequest request, ICommandRunner commandRunner) : base(request, commandRunner) { }
+        public Nav2015(IObjectDesignerConfig request, ICommandRunner commandRunner) : base(request, commandRunner) { }
         
         internal override string ImportCommand(string command)
         {

@@ -8,6 +8,6 @@ namespace TI.Nav.Utils
 {
     public interface ICommandRunner
     {
-        string RunCommand(IObjectDesignerRequest request, string command);
+        string RunCommand(IObjectDesignerConfig request, string command);
     }
 }

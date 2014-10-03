@@ -8,48 +8,49 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
+using TI.Nav.Utils.Exceptions;
 
-namespace TI.Nav.Utils
+namespace TI.Nav.Utils.Versions
 {
     public abstract class GenericObjectDesigner : IObjectDesigner
     {
-        private IObjectDesignerRequest mRequest;
+        private IObjectDesignerConfig mConfig;
         private ICommandRunner mCommandRunner;
 
-        internal GenericObjectDesigner(IObjectDesignerRequest request, ICommandRunner commandRunner)
+        internal GenericObjectDesigner(IObjectDesignerConfig config, ICommandRunner commandRunner)
         {
-            mRequest = request;
+            mConfig = config;
             mCommandRunner = commandRunner;
         }
 
-        public ExportResponse Export(ExportRequest request)
+        public ExportResponse Export(ExportRequest config)
         {
-            Log.Verbose("Exporting for request {@request}", request);
-            string cmd = string.Format("command=exportobjects, file=\"{0}\",servername={1},database={2},filter={3}", request.FileName, mRequest.Server, mRequest.Database, request.Filter);
+            Log.Verbose("Exporting for config {@config}", config);
+            string cmd = string.Format("command=exportobjects, file=\"{0}\",servername={1},database={2},filter={3}", config.FileName, mConfig.Server, mConfig.Database, config.Filter);
             string result = string.Empty;
 
-            var response = new ExportResponse() { Succesful = true };
+            var response = new ExportResponse() { Successful = true };
             try
             {
-                RunCommand(request.Filter, cmd);
+                RunCommand(config.Filter, cmd);
             }
             catch (ObjectDesignerException ex)
             {
                 Log.Verbose(ex, "Compilation Errors");
-                response.Exception = ex;
-                response.Succesful = false;
+                response.Exceptions.Add(ex);
+                response.Successful = false;
             }
             return response;
         }
 
         internal virtual string ImportCommand(string command) { return null; }
 
-        public ImportResponse Import(ImportRequest request)
+        public ImportResponse Import(ImportRequest config)
         {
-            var response = new ImportResponse() { Result = true };
+            var response = new ImportResponse() { Successful= true };
 
             // process the stuff in parallel 
-            Parallel.ForEach<string>(request.Files, f =>
+            Parallel.ForEach<string>(config.Files, f =>
             {
                 try
                 {
@@ -58,17 +59,17 @@ namespace TI.Nav.Utils
                 catch (ObjectDesignerException ex)
                 {
                     response.Exceptions.Add(ex);
-                    response.Result = false;
+                    response.Successful = false;
                 }
             });
             return response;
         }
 
-        public CompileResponse Compile(CompileRequest request)
+        public CompileResponse Compile(CompileRequest config)
         {
-            string cmd = string.Format("command=compileobjects, servername={0},database={1},filter={2}", mRequest.Server, mRequest.Database, request.Filter);
+            string cmd = string.Format("command=compileobjects, servername={0},database={1},filter={2}", mConfig.Server, mConfig.Database, config.Filter);
             string result = null;
-            var response = new CompileResponse() { Succesful = true };
+            var response = new CompileResponse() { Successful = true };
             try
             {
                 RunCommand(null, cmd);
@@ -76,7 +77,7 @@ namespace TI.Nav.Utils
             catch (ObjectDesignerException ex)
             {
                 Log.Verbose(ex, "Compilation Errors");
-                response.Succesful = false;
+                response.Successful = false;
                 result = ex.Message;
             }
 
@@ -103,13 +104,13 @@ namespace TI.Nav.Utils
         #region private methods
         private void ImportFile(string fileName)
         {
-            var command = ImportCommand(string.Format("command=importobjects, file=\"{0}\",servername={1},database={2}", fileName, mRequest.Server, mRequest.Database));
+            var command = ImportCommand(string.Format("command=importobjects, file=\"{0}\",servername={1},database={2}", fileName, mConfig.Server, mConfig.Database));
             RunCommand(fileName, command);
         }
 
         private string RunCommand(string source, string arguments)
         {
-            string result = mCommandRunner.RunCommand(mRequest, arguments);
+            string result = mCommandRunner.RunCommand(mConfig, arguments);
             if (IsNavErrorMessage(result))
             {
                 Log.Error("An error {@message} occured while executing the finsql command with arguments {@arguments}", result, arguments);

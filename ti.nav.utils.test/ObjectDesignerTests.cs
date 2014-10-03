@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TI.Nav.Utils.Exceptions;
+using TI.Nav.Utils.Versions;
 using Xunit;
 using Xunit.Extensions;
 
@@ -22,7 +24,7 @@ namespace TI.Nav.Utils.Test
         public void GetObjectDesiger(int major, int minor, Type expected)
         {
             // arrange
-            var req = new Mock<IObjectDesignerRequest>();
+            var req = new Mock<IObjectDesignerConfig>();
             req.SetupGet(x => x.MajorVersion).Returns(major);
             req.SetupGet(x => x.MinorVersion).Returns(minor);
 
@@ -38,15 +40,15 @@ namespace TI.Nav.Utils.Test
         {
             // arrange
             var runner = new Mock<ICommandRunner>();
-            var designer = new Nav2015(new ObjectDesignerRequest(), runner.Object);
+            var designer = new Nav2015(new ObjectDesignerConfig(), runner.Object);
             var request = GetImportRequest();
 
             // act
             var result = designer.Import(request);
 
             // assert
-            Assert.True(result.Result);
-            runner.Verify(x => x.RunCommand(It.IsAny<IObjectDesignerRequest>(), It.IsAny<string>()), Times.Exactly(request.Files.Count()));
+            Assert.True(result.Successful);
+            runner.Verify(x => x.RunCommand(It.IsAny<IObjectDesignerConfig>(), It.IsAny<string>()), Times.Exactly(request.Files.Count()));
         }
 
         [Fact]
@@ -54,16 +56,16 @@ namespace TI.Nav.Utils.Test
         {
             // arrange
             var runner = new Mock<ICommandRunner>();
-            runner.Setup(x => x.RunCommand(It.IsAny<IObjectDesignerRequest>(), It.IsRegex("Codeunit3.txt"))).Returns("[12345] Import Error");
-            var designer = new Nav2015(new ObjectDesignerRequest(), runner.Object);
+            runner.Setup(x => x.RunCommand(It.IsAny<IObjectDesignerConfig>(), It.IsRegex("Codeunit3.txt"))).Returns("[12345] Import Error");
+            var designer = new Nav2015(new ObjectDesignerConfig(), runner.Object);
             var request = GetImportRequest();
 
             // act
             var result = designer.Import(request);
 
             // assert
-            Assert.False(result.Result);
-            runner.Verify(x => x.RunCommand(It.IsAny<IObjectDesignerRequest>(), It.IsAny<string>()), Times.Exactly(request.Files.Count()));
+            Assert.False(result.Successful);
+            runner.Verify(x => x.RunCommand(It.IsAny<IObjectDesignerConfig>(), It.IsAny<string>()), Times.Exactly(request.Files.Count()));
             Assert.IsType<ObjectDesignerException>(result.Exceptions.First());
             Assert.Equal("Codeunit3.txt", result.Exceptions.First().Source);
         }
@@ -73,15 +75,15 @@ namespace TI.Nav.Utils.Test
         {
             // arrange
             var runner = new Mock<ICommandRunner>();
-            runner.Setup(x => x.RunCommand(It.IsAny<IObjectDesignerRequest>(), It.IsRegex("Codeunit3.txt"))).Returns("[18023763] Your license has expired");
-            var designer = new Nav2015(new ObjectDesignerRequest(), runner.Object);
+            runner.Setup(x => x.RunCommand(It.IsAny<IObjectDesignerConfig>(), It.IsRegex("Codeunit3.txt"))).Returns("[18023763] Your license has expired");
+            var designer = new Nav2015(new ObjectDesignerConfig(), runner.Object);
             var request = GetImportRequest();
 
             // act            
             var result = designer.Import(request);
 
             // assert
-            Assert.True(result.Result);
+            Assert.True(result.Successful);
         }
 
         [Fact]
@@ -89,14 +91,14 @@ namespace TI.Nav.Utils.Test
         {
             // arrange
             var runner = new Mock<ICommandRunner>();
-            var designer = new Nav2015(new ObjectDesignerRequest(), runner.Object);
+            var designer = new Nav2015(new ObjectDesignerConfig(), runner.Object);
             var request = GetImportRequest(1);
 
             // act
             var result = designer.Import(request);
 
             // assert
-            runner.Verify(x => x.RunCommand(It.IsAny<IObjectDesignerRequest>(), It.IsRegex("synchronizeschemachanges=force")));
+            runner.Verify(x => x.RunCommand(It.IsAny<IObjectDesignerConfig>(), It.IsRegex("synchronizeschemachanges=force")));
         }
 
         [Fact]
@@ -104,14 +106,14 @@ namespace TI.Nav.Utils.Test
         {
             // arrange
             var runner = new Mock<ICommandRunner>();
-            var designer = new Nav2013R2(new ObjectDesignerRequest(), runner.Object);
+            var designer = new Nav2013R2(new ObjectDesignerConfig(), runner.Object);
             var request = GetImportRequest(1);
 
             // act
             var result = designer.Import(request);
 
             // assert
-            runner.Verify(x => x.RunCommand(It.IsAny<IObjectDesignerRequest>(), It.IsRegex("validatetablechanges=0")));
+            runner.Verify(x => x.RunCommand(It.IsAny<IObjectDesignerConfig>(), It.IsRegex("validatetablechanges=0")));
         }
 
         [Fact]
@@ -119,16 +121,16 @@ namespace TI.Nav.Utils.Test
         {
             // arrange
             var runner = new Mock<ICommandRunner>();
-            var designer = new Nav2013R2(new ObjectDesignerRequest(), runner.Object);
+            var designer = new Nav2013R2(new ObjectDesignerConfig(), runner.Object);
             var request = new CompileRequest() { Filter = "Locked=1" };
 
             // act
             var result = designer.Compile(request);
 
             // assert
-            Assert.True(result.Succesful);
+            Assert.True(result.Successful);
             Assert.Null(result.Exceptions.FirstOrDefault());
-            runner.Verify(x => x.RunCommand(It.IsAny<IObjectDesignerRequest>(), It.IsRegex(request.Filter)), Times.Once);
+            runner.Verify(x => x.RunCommand(It.IsAny<IObjectDesignerConfig>(), It.IsRegex(request.Filter)), Times.Once);
         }
 
         [Fact]
@@ -137,15 +139,15 @@ namespace TI.Nav.Utils.Test
             // arrange
             var runner = new Mock<ICommandRunner>();
             string error = "[23462397] You have specified an unknown variable.\r\n\r\nsaerwer\r\n\r\nDefine the variable under 'Global C/AL symbols'. -- Object: Codeunit 90001 nxxx tribute\r\n[31588355] Could not load type 'TI.DocumentManagement.DocumentUploaderActivity.'TI.DocumentManagement, Version=13.4.0.0, Culture=neutral, PublicKeyToken=f476381a83e1102f''. -- Object: Codeunit 11068711 N108 Document Upload Activity\r\n[31588355] Could not load type 'TI.DocumentManagement.DocumentManagement.'TI.DocumentManagement, Version=13.4.0.0, Culture=neutral, PublicKeyToken=f476381a83e1102f''. -- Object: Page 11068709 N108 Document Mgt. Factbox\r\n";
-            runner.Setup(x => x.RunCommand(It.IsAny<IObjectDesignerRequest>(), It.IsAny<string>())).Returns(error);
-            var designer = new Nav2013R2(new ObjectDesignerRequest(), runner.Object);
+            runner.Setup(x => x.RunCommand(It.IsAny<IObjectDesignerConfig>(), It.IsAny<string>())).Returns(error);
+            var designer = new Nav2013R2(new ObjectDesignerConfig(), runner.Object);
             var request = new CompileRequest() { Filter = "Locked=1" };
 
             // act
             var result = designer.Compile(request);
 
             // assert
-            Assert.False(result.Succesful);
+            Assert.False(result.Successful);
             Assert.IsType<CompilationException>(result.Exceptions.FirstOrDefault());
             Assert.Equal(3, result.Exceptions.Count());
         }
@@ -155,16 +157,16 @@ namespace TI.Nav.Utils.Test
         {
             // arrange
             var runner = new Mock<ICommandRunner>();
-            var designer = new Nav2013R2(new ObjectDesignerRequest(), runner.Object);
+            var designer = new Nav2013R2(new ObjectDesignerConfig(), runner.Object);
             var request = new ExportRequest() { Filter = "Locked=1" };
 
             // act
             var result = designer.Export(request);
 
             // assert
-            Assert.True(result.Succesful);
-            Assert.Null(result.Exception);
-            runner.Verify(x => x.RunCommand(It.IsAny<IObjectDesignerRequest>(), It.IsRegex(request.Filter)), Times.Once);
+            Assert.True(result.Successful);
+            Assert.Null(result.Exceptions.FirstOrDefault());
+            runner.Verify(x => x.RunCommand(It.IsAny<IObjectDesignerConfig>(), It.IsRegex(request.Filter)), Times.Once);
         }
 
 

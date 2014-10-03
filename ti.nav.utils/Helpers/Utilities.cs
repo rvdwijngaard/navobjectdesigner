@@ -6,11 +6,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TI.Nav.Utils
+namespace TI.Nav.Utils.Helpers
 {
     public static class Utilities 
     {
-        public static FileVersionInfo GetVersion(IObjectDesignerRequest request)
+        public static FileVersionInfo GetVersion(IObjectDesignerConfig request)
         {
             return FileVersionInfo.GetVersionInfo(request.ExecPath);            
         }

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace TI.Nav.Utils
 {
-    public interface IObjectDesignerRequest
+    public interface IObjectDesignerConfig
     {
         string Server { get; set; }
         string Database { get; set; }

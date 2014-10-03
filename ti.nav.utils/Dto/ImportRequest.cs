@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TI.Nav.Utils.Interfaces;
 
 namespace TI.Nav.Utils
 {
@@ -21,7 +22,7 @@ namespace TI.Nav.Utils
         }        
     }
 
-    public class ImportResponse
+    public class ImportResponse : IActionResponse
     {     
         private List<Exception> mExceptions = new List<Exception>();
        
@@ -35,6 +36,6 @@ namespace TI.Nav.Utils
             }
         }
 
-        public Boolean Result { get; set; }        
+        public bool Successful { get; set; }
     }
 }

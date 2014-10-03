@@ -9,6 +9,6 @@ namespace TI.Nav.Utils
 {
     interface IUtilities
     {
-        FileVersionInfo GetVersion(IObjectDesignerRequest request);
+        FileVersionInfo GetVersion(IObjectDesignerConfig request);
     }
 }

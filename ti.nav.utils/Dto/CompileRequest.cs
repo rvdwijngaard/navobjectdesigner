@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TI.Nav.Utils.Interfaces;
 
 namespace TI.Nav.Utils
 {
@@ -11,7 +12,7 @@ namespace TI.Nav.Utils
         public string Filter { get; set; }
     }
 
-    public class CompileResponse
+    public class CompileResponse : IActionResponse
     {
         private List<Exception> mExceptions = new List<Exception>();
 
@@ -25,6 +26,6 @@ namespace TI.Nav.Utils
             }
         }
 
-        public bool Succesful { get; set; }
+        public bool Successful { get; set; }        
     }
 }

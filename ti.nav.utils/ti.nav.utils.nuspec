@@ -11,5 +11,8 @@
     <summary></summary>
     <copyright>Copyright 2014</copyright>
     <projectUrl>http://www.to-increase.com</projectUrl>	     
-  </metadata>  
+  </metadata>
+  <files>
+    <file src="bin\Release\*.dll" target="lib" />          
+  </files>
 </package>

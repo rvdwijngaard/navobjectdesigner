@@ -46,11 +46,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommandRunner.cs" />
+    <Compile Include="Dto\ExportRequest.cs" />
+    <Compile Include="Dto\CompileRequest.cs" />
     <Compile Include="Dto\ImportRequest.cs" />
+    <Compile Include="Exceptions\CompilationException.cs" />
     <Compile Include="Interfaces\ICommandRunner.cs" />
     <Compile Include="Interfaces\IObjectDesignerRequest.cs" />
     <Compile Include="Interfaces\IUtilities.cs" />
-    <Compile Include="ObjectDesignerException.cs" />
+    <Compile Include="Exceptions\ObjectDesignerException.cs" />
     <Compile Include="ObjectDesignerFactory.cs" />
     <Compile Include="Interfaces\IObjectDesigner.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -63,6 +66,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="ti.nav.utils.nuspec" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

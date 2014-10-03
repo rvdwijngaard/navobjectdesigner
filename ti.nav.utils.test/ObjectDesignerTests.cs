@@ -37,7 +37,7 @@ namespace TI.Nav.Utils.Test
         public void Import()
         {
             // arrange
-            var runner = new Mock<ICommandRunner>();            
+            var runner = new Mock<ICommandRunner>();
             var designer = new Nav2015(new ObjectDesignerRequest(), runner.Object);
             var request = GetImportRequest();
 
@@ -51,7 +51,7 @@ namespace TI.Nav.Utils.Test
 
         [Fact]
         public void ImportWithErrors()
-        {            
+        {
             // arrange
             var runner = new Mock<ICommandRunner>();
             runner.Setup(x => x.RunCommand(It.IsAny<IObjectDesignerRequest>(), It.IsRegex("Codeunit3.txt"))).Returns("[12345] Import Error");
@@ -72,10 +72,10 @@ namespace TI.Nav.Utils.Test
         public void LicenseWarning_ShouldBeIgnored()
         {
             // arrange
-            var runner = new Mock<ICommandRunner>();            
+            var runner = new Mock<ICommandRunner>();
             runner.Setup(x => x.RunCommand(It.IsAny<IObjectDesignerRequest>(), It.IsRegex("Codeunit3.txt"))).Returns("[18023763] Your license has expired");
             var designer = new Nav2015(new ObjectDesignerRequest(), runner.Object);
-            var request = GetImportRequest();                        
+            var request = GetImportRequest();
 
             // act            
             var result = designer.Import(request);
@@ -91,7 +91,7 @@ namespace TI.Nav.Utils.Test
             var runner = new Mock<ICommandRunner>();
             var designer = new Nav2015(new ObjectDesignerRequest(), runner.Object);
             var request = GetImportRequest(1);
-                        
+
             // act
             var result = designer.Import(request);
 
@@ -114,15 +114,69 @@ namespace TI.Nav.Utils.Test
             runner.Verify(x => x.RunCommand(It.IsAny<IObjectDesignerRequest>(), It.IsRegex("validatetablechanges=0")));
         }
 
+        [Fact]
+        public void Compile()
+        {
+            // arrange
+            var runner = new Mock<ICommandRunner>();
+            var designer = new Nav2013R2(new ObjectDesignerRequest(), runner.Object);
+            var request = new CompileRequest() { Filter = "Locked=1" };
+
+            // act
+            var result = designer.Compile(request);
+
+            // assert
+            Assert.True(result.Succesful);
+            Assert.Null(result.Exceptions.FirstOrDefault());
+            runner.Verify(x => x.RunCommand(It.IsAny<IObjectDesignerRequest>(), It.IsRegex(request.Filter)), Times.Once);
+        }
+
+        [Fact]
+        public void CompileWithErrors()
+        {
+            // arrange
+            var runner = new Mock<ICommandRunner>();
+            string error = "[23462397] You have specified an unknown variable.\r\n\r\nsaerwer\r\n\r\nDefine the variable under 'Global C/AL symbols'. -- Object: Codeunit 90001 nxxx tribute\r\n[31588355] Could not load type 'TI.DocumentManagement.DocumentUploaderActivity.'TI.DocumentManagement, Version=13.4.0.0, Culture=neutral, PublicKeyToken=f476381a83e1102f''. -- Object: Codeunit 11068711 N108 Document Upload Activity\r\n[31588355] Could not load type 'TI.DocumentManagement.DocumentManagement.'TI.DocumentManagement, Version=13.4.0.0, Culture=neutral, PublicKeyToken=f476381a83e1102f''. -- Object: Page 11068709 N108 Document Mgt. Factbox\r\n";
+            runner.Setup(x => x.RunCommand(It.IsAny<IObjectDesignerRequest>(), It.IsAny<string>())).Returns(error);
+            var designer = new Nav2013R2(new ObjectDesignerRequest(), runner.Object);
+            var request = new CompileRequest() { Filter = "Locked=1" };
+
+            // act
+            var result = designer.Compile(request);
+
+            // assert
+            Assert.False(result.Succesful);
+            Assert.IsType<CompilationException>(result.Exceptions.FirstOrDefault());
+            Assert.Equal(3, result.Exceptions.Count());
+        }
+
+        [Fact]
+        public void Export()
+        {
+            // arrange
+            var runner = new Mock<ICommandRunner>();
+            var designer = new Nav2013R2(new ObjectDesignerRequest(), runner.Object);
+            var request = new ExportRequest() { Filter = "Locked=1" };
+
+            // act
+            var result = designer.Export(request);
+
+            // assert
+            Assert.True(result.Succesful);
+            Assert.Null(result.Exception);
+            runner.Verify(x => x.RunCommand(It.IsAny<IObjectDesignerRequest>(), It.IsRegex(request.Filter)), Times.Once);
+        }
+
+
         private ImportRequest GetImportRequest()
-        {            
+        {
             return GetImportRequest(4);
         }
-        
+
         private ImportRequest GetImportRequest(int len)
         {
             var request = new ImportRequest();
-          
+
             for (int i = 0; i < len; i++)
             {
                 request.Files.Add(string.Format("Codeunit{0}.txt", i));

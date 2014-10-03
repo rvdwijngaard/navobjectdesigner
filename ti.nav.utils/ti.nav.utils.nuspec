@@ -1,0 +1,14 @@
+﻿<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>ti.nav.utils</id>    
+    <title>Utilities for Microsoft Dynamics NAV Object Designer</title>
+    <authors>To-Increase B.V.</authors>
+    <owners>To-Increase B.V.</owners>    
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Common library with generic tools</description>
+    <summary></summary>
+    <copyright>Copyright 2014</copyright>
+    <projectUrl>http://www.to-increase.com</projectUrl>	     
+  </metadata>  
+</package>

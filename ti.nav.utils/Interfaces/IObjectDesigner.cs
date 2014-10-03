@@ -7,8 +7,8 @@ namespace TI.Nav.Utils
 {
     public interface IObjectDesigner
     {
-        void Export(string filter, string fileName);                
+        ExportResponse Export(ExportRequest request);                
         ImportResponse Import(ImportRequest request);
-        void Compile();        
+        CompileResponse Compile(CompileRequest request);        
     }
 }

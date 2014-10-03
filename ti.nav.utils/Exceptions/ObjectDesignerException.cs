@@ -11,5 +11,5 @@ namespace TI.Nav.Utils
         public ObjectDesignerException(string source, string message)
             : base(message)
         { this.Source = source; }
-    }
+    }   
 }

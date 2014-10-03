@@ -11,19 +11,19 @@ namespace TI.Nav.Utils
         public Classic(IObjectDesignerRequest request)
         {
 
-        }
-
-        public void Export(string filter, string fileName)
-        {
-            throw new NotImplementedException();
-        }
+        }       
 
         public ImportResponse Import(ImportRequest request)
         {
             throw new NotImplementedException();
         }
 
-        public void Compile()
+        public CompileResponse Compile(CompileRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ExportResponse Export(ExportRequest request)
         {
             throw new NotImplementedException();
         }

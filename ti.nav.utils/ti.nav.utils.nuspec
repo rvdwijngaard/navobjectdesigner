@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>ti.nav.utils</id>    
-    <version></version>
+    <version>1.0.0.0</version>
     <title>Utilities for Microsoft Dynamics NAV Object Designer</title>
     <authors>To-Increase B.V.</authors>
     <owners>To-Increase B.V.</owners>    

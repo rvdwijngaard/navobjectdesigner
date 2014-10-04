@@ -55,6 +55,7 @@
     <Compile Include="Interfaces\IObjectDesignerConfig.cs" />
     <Compile Include="Interfaces\IUtilities.cs" />
     <Compile Include="Exceptions\ObjectDesignerException.cs" />
+    <Compile Include="Logger\Logger.cs" />
     <Compile Include="ObjectDesignerConfig.cs" />
     <Compile Include="ObjectDesignerFactory.cs" />
     <Compile Include="Interfaces\IObjectDesigner.cs" />

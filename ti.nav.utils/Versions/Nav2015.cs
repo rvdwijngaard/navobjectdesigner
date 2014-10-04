@@ -14,6 +14,10 @@ namespace TI.Nav.Utils.Versions
         {
             return command += ",synchronizeschemachanges=force"; 
         }
-        
+
+        internal override string CompileCommand(string command)
+        {
+            return command += ",synchronizeschemachanges=no"; // todo: make this configurable
+        }
     }
 }

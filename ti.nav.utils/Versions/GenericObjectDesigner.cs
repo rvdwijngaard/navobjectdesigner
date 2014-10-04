@@ -48,9 +48,9 @@ namespace TI.Nav.Utils.Versions
         public ImportResponse Import(ImportRequest config)
         {
             var response = new ImportResponse() { Successful= true };
-
+            var options = new ParallelOptions() { MaxDegreeOfParallelism = 4 };
             // process the stuff in parallel 
-            Parallel.ForEach<string>(config.Files, f =>
+            Parallel.ForEach<string>(config.Files, options,  f =>
             {
                 try
                 {
@@ -65,9 +65,11 @@ namespace TI.Nav.Utils.Versions
             return response;
         }
 
+        internal virtual string CompileCommand(string command) { return command; }
+
         public CompileResponse Compile(CompileRequest config)
         {
-            string cmd = string.Format("command=compileobjects, servername={0},database={1},filter={2}", mConfig.Server, mConfig.Database, config.Filter);
+            string cmd = CompileCommand(string.Format("command=compileobjects, servername={0},database={1},filter={2}", mConfig.Server, mConfig.Database, config.Filter));
             string result = null;
             var response = new CompileResponse() { Successful = true };
             try
@@ -88,7 +90,7 @@ namespace TI.Nav.Utils.Versions
                 {
                     Tuple<string, string> source = new Tuple<string, string>(GetValueFromMatch(m.Groups, "type"), GetValueFromMatch(m.Groups, "id"));
 
-                    var ex = new CompilationException(string.Format("{0} {1}", source.Item1, source.Item2), GetValueFromMatch(m.Groups, "errortext"));
+                    var ex = new CompilationException(string.Format("{0} {1}", source.Item1, source.Item2), GetValueFromMatch(m.Groups, "message"));
                     response.Exceptions.Add(ex);
                     Log.Verbose(ex, "Compilation errors for object {@type} {@id}", source.Item1, source.Item2);
                 }

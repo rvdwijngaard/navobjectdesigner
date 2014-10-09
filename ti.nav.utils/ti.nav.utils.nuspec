@@ -13,6 +13,6 @@
     <projectUrl>http://www.to-increase.com</projectUrl>	     
   </metadata>
   <files>
-    <file src="bin\Release\*.dll" target="lib" />          
+    <file src="*.dll" target="lib" />          
   </files>
 </package>

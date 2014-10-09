@@ -45,6 +45,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Enum\NavObjectType.cs" />
+    <Compile Include="Exceptions\ObjectDesignerDeadlockException.cs" />
     <Compile Include="Helpers\CommandRunner.cs" />
     <Compile Include="Dto\ExportRequest.cs" />
     <Compile Include="Dto\CompileRequest.cs" />

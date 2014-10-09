@@ -15,5 +15,11 @@ namespace TI.Nav.Utils
         string ExecPath { get;  }
         int MajorVersion { get; }
         int MinorVersion { get; }
+        
+        string NavServerName { get; set; }
+        
+        string NavServerInstance { get; set; }
+        
+        string NavServerManagementPort { get; set; }
     }
 }

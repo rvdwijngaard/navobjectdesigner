@@ -12,13 +12,14 @@ namespace TI.Nav.Utils
         public static ILogger ConfigureLogger(string applicationName)
         {
             Log.Logger = new LoggerConfiguration()
-                 .WriteTo.Console()
+                 .WriteTo.Console()                 
                  .Enrich.FromLogContext()
                  .Enrich.WithMachineName()
                  .Enrich.WithProperty("UserName", Environment.UserName)
                  .Enrich.WithProperty("ApplicationName", applicationName)
+                 .MinimumLevel.Verbose()
                  .CreateLogger();
-
+           
             return Log.Logger;
         }
     }

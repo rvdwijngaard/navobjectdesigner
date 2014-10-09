@@ -71,6 +71,23 @@ namespace TI.Nav.Utils.Test
         }
 
         [Fact]
+        public void ImportWithDeadlocks()
+        {
+            // arrange
+            var runner = new Mock<ICommandRunner>();
+            runner.Setup(x => x.RunCommand(It.IsAny<IObjectDesignerConfig>(), It.IsRegex("Codeunit3.txt"))).Returns("[22926089] Deadlock Error");
+            
+            var designer = new Nav2015(new ObjectDesignerConfig(), runner.Object);
+            var request = GetImportRequest(10);
+
+            // act
+            var result = designer.Import(request);
+            // assert
+            Assert.True(result.Successful);
+            runner.Verify(x => x.RunCommand(It.IsAny<IObjectDesignerConfig>(), It.IsAny<string>()), Times.Exactly(request.Files.Count() + 1));            
+        }
+
+        [Fact]
         public void LicenseWarning_ShouldBeIgnored()
         {
             // arrange
@@ -98,7 +115,7 @@ namespace TI.Nav.Utils.Test
             var result = designer.Import(request);
 
             // assert
-            runner.Verify(x => x.RunCommand(It.IsAny<IObjectDesignerConfig>(), It.IsRegex("synchronizeschemachanges=force")));
+            runner.Verify(x => x.RunCommand(It.IsAny<IObjectDesignerConfig>(), It.IsRegex("synchronizeschemachanges=no")));
         }
 
         [Fact]
@@ -130,7 +147,7 @@ namespace TI.Nav.Utils.Test
             // assert
             Assert.True(result.Successful);
             Assert.Null(result.Exceptions.FirstOrDefault());
-            runner.Verify(x => x.RunCommand(It.IsAny<IObjectDesignerConfig>(), It.IsRegex(request.Filter)), Times.Once);
+            runner.Verify(x => x.RunCommand(It.IsAny<IObjectDesignerConfig>(), It.IsRegex(request.Filter)), Times.Exactly(6));
         }
 
         [Fact]
@@ -149,7 +166,7 @@ namespace TI.Nav.Utils.Test
             // assert
             Assert.False(result.Successful);
             Assert.IsType<CompilationException>(result.Exceptions.FirstOrDefault());
-            Assert.Equal(3, result.Exceptions.Count());
+            Assert.Equal(18, result.Exceptions.Count());
         }
 
         [Fact]

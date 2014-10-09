@@ -47,10 +47,11 @@ namespace TI.Nav.Utils.Versions
 
         public ImportResponse Import(ImportRequest config)
         {
-            var response = new ImportResponse() { Successful= true };
-            var options = new ParallelOptions() { MaxDegreeOfParallelism = 4 };
-            // process the stuff in parallel 
-            Parallel.ForEach<string>(config.Files, options,  f =>
+            var queue = new ConcurrentQueue<string>();
+            var response = new ImportResponse() { Successful = true };
+            var options = new ParallelOptions() { };
+
+            Action<string> import = (string f) =>
             {
                 try
                 {
@@ -61,41 +62,72 @@ namespace TI.Nav.Utils.Versions
                     response.Exceptions.Add(ex);
                     response.Successful = false;
                 }
-            });
+                catch (ObjectDesignerDeadlockException dle)
+                {
+                    Log.Warning(dle, "Deadlock exception occurred; {@item} will be retried later", dle.Source);
+                    queue.Enqueue(dle.Source);
+                }
+            };
+
+            Log.Verbose("Import all items in parallel");
+            Parallel.ForEach<string>(config.Files, options, import);
+
+            Log.Verbose("Retry {@count} items with a deadlock exception", queue.Count());
+            queue.ToList().ForEach(import);
+
             return response;
         }
 
         internal virtual string CompileCommand(string command) { return command; }
 
-        public CompileResponse Compile(CompileRequest config)
+        public CompileResponse Compile(CompileRequest request)
         {
-            string cmd = CompileCommand(string.Format("command=compileobjects, servername={0},database={1},filter={2}", mConfig.Server, mConfig.Database, config.Filter));
-            string result = null;
+            Log.Verbose("Compile all objects for request {@request}", request);
+            
             var response = new CompileResponse() { Successful = true };
-            try
-            {
-                RunCommand(null, cmd);
-            }
-            catch (ObjectDesignerException ex)
-            {
-                Log.Verbose(ex, "Compilation Errors");
-                response.Successful = false;
-                result = ex.Message;
-            }
-
-            if (!String.IsNullOrEmpty(result))
-            {
-                const string expr = @"(\[\d*\](?<message>.*?)--) Object:\s(?<type>\w*)\s(?<id>\d*)\s(?<name>(\s|\w)*)";
-                foreach (Match m in Regex.Matches(result, expr, RegexOptions.Singleline))
+            var types = new List<string> { "Table", "Codeunit", "Page", "Report", "XMLport", "Query" };
+            string result = null;
+            
+            Action<string> compile = (string t) =>
                 {
-                    Tuple<string, string> source = new Tuple<string, string>(GetValueFromMatch(m.Groups, "type"), GetValueFromMatch(m.Groups, "id"));
+                    try
+                    {
+                        CompileObjectsForType(request, string.Format("Type={0}", t));
+                    }
+                    catch (ObjectDesignerException ex)
+                    {
+                        Log.Verbose(ex, "Compilation Errors");
+                        response.Successful = false;
+                        result = ex.Message;
+                    }
 
-                    var ex = new CompilationException(string.Format("{0} {1}", source.Item1, source.Item2), GetValueFromMatch(m.Groups, "message"));
-                    response.Exceptions.Add(ex);
-                    Log.Verbose(ex, "Compilation errors for object {@type} {@id}", source.Item1, source.Item2);
-                }
-            }
+                    if (!String.IsNullOrEmpty(result))
+                    {
+                        const string expr = @"(\[\d*\](?<message>.*?)--) Object:\s(?<type>\w*)\s(?<id>\d*)\s(?<name>(\s|\w)*)";
+                        foreach (Match m in Regex.Matches(result, expr, RegexOptions.Singleline))
+                        {
+                            Tuple<string, string> source = new Tuple<string, string>(GetValueFromMatch(m.Groups, "type"), GetValueFromMatch(m.Groups, "id"));
+
+                            var ex = new CompilationException(string.Format("{0} {1}", source.Item1, source.Item2), GetValueFromMatch(m.Groups, "message"));
+                            response.Exceptions.Add(ex);
+                            Log.Verbose(ex, "Compilation errors for object {@type} {@id}", source.Item1, source.Item2);
+                        }
+                    }
+                };
+
+            Parallel.ForEach<string>(types, compile);
+            Log.Verbose("Compile all objects for {@request} completed", request);
+
             return response;
+        }
+
+        private void CompileObjectsForType(CompileRequest config, string Typefilter)
+        {
+            string filter = !string.IsNullOrEmpty(config.Filter) ? string.Format("{0};{1}", config.Filter, Typefilter) : Typefilter;
+            string cmd = CompileCommand(
+                    string.Format("command=compileobjects, servername={0},database={1},filter={2}", mConfig.Server, mConfig.Database, filter));
+            Log.Verbose("Compile the objects with filter {@filter}", filter);
+            RunCommand(null, cmd);
         }
 
         private string GetValueFromMatch(GroupCollection groups, string key)
@@ -106,36 +138,27 @@ namespace TI.Nav.Utils.Versions
         #region private methods
         private void ImportFile(string fileName)
         {
-            var command = ImportCommand(string.Format("command=importobjects, file=\"{0}\",servername={1},database={2}", fileName, mConfig.Server, mConfig.Database));
+            var command = ImportCommand(string.Format("command=importobjects, file=\"{0}\",servername={1},database={2},importaction=overwrite", fileName, mConfig.Server, mConfig.Database));
             RunCommand(fileName, command);
         }
 
-        private string RunCommand(string source, string arguments)
+        private void RunCommand(string source, string arguments)
         {
-            string result = mCommandRunner.RunCommand(mConfig, arguments);
-            if (IsNavErrorMessage(result))
-            {
-                Log.Error("An error {@message} occured while executing the finsql command with arguments {@arguments}", result, arguments);
-                throw new ObjectDesignerException(source, result);
-            }
-            return result;
+            Log.Verbose("Run finsql command with arguments {@arguments} for source {@source}", arguments, source);
+            ProcessCommandResult(source, mCommandRunner.RunCommand(mConfig, arguments));
         }
 
-        private bool IsNavErrorMessage(string message)
+        private void ProcessCommandResult(string source, string message)
         {
-            if (!string.IsNullOrEmpty(message))
+            // License warning which should be ignored
+            if (!string.IsNullOrEmpty(message) && !message.StartsWith("[18023763]"))
             {
-                Log.Warning("The Microsoft Dynamics NAV development environment returned {@warning}", message);
-                // License warning which should be ignored
-                if (message.StartsWith("[18023763]"))
-                    return false;
-
-                return true;
+                if (message.StartsWith("[22926089]") || message.StartsWith("[22926090]"))
+                    throw new ObjectDesignerDeadlockException(source, message);
+                throw new ObjectDesignerException(source, message);
             }
-            return false;
+
         }
-
-
 
         #endregion
     }

@@ -43,7 +43,7 @@ namespace TI.Nav.Utils.Versions
             return response;
         }
 
-        internal virtual string ImportCommand(string command) { return null; }
+        internal virtual string ImportCommand(string command) { return command; }
 
         public ImportResponse Import(ImportRequest config)
         {

@@ -1,7 +1,9 @@
 ﻿using Moq;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -76,7 +78,7 @@ namespace TI.Nav.Utils.Test
             // arrange
             var runner = new Mock<ICommandRunner>();
             runner.Setup(x => x.RunCommand(It.IsAny<IObjectDesignerConfig>(), It.IsRegex("Codeunit3.txt"))).Returns("[22926089] Deadlock Error");
-            
+
             var designer = new Nav2015(new ObjectDesignerConfig(), runner.Object);
             var request = GetImportRequest(10);
 
@@ -84,7 +86,7 @@ namespace TI.Nav.Utils.Test
             var result = designer.Import(request);
             // assert
             Assert.True(result.Successful);
-            runner.Verify(x => x.RunCommand(It.IsAny<IObjectDesignerConfig>(), It.IsAny<string>()), Times.Exactly(request.Files.Count() + 1));            
+            runner.Verify(x => x.RunCommand(It.IsAny<IObjectDesignerConfig>(), It.IsAny<string>()), Times.Exactly(request.Files.Count() + 1));
         }
 
         [Fact]
@@ -147,7 +149,7 @@ namespace TI.Nav.Utils.Test
             // assert
             Assert.True(result.Successful);
             Assert.Null(result.Exceptions.FirstOrDefault());
-            runner.Verify(x => x.RunCommand(It.IsAny<IObjectDesignerConfig>(), It.IsRegex(request.Filter)), Times.Exactly(6));
+            runner.Verify(x => x.RunCommand(It.IsAny<IObjectDesignerConfig>(), It.IsRegex(request.Filter)), Times.Exactly(7));
         }
 
         [Fact]
@@ -166,7 +168,7 @@ namespace TI.Nav.Utils.Test
             // assert
             Assert.False(result.Successful);
             Assert.IsType<CompilationException>(result.Exceptions.FirstOrDefault());
-            Assert.Equal(18, result.Exceptions.Count());
+            Assert.Equal(21, result.Exceptions.Count());
         }
 
         [Fact]
@@ -175,7 +177,8 @@ namespace TI.Nav.Utils.Test
             // arrange
             var runner = new Mock<ICommandRunner>();
             var designer = new Nav2013R2(new ObjectDesignerConfig(), runner.Object);
-            var request = new ExportRequest() { Filter = "Locked=1" };
+            var filters = new List<ExportFilter>() { new ExportFilter() { Filter = "Locked=1", FileName = "export.txt" } };
+            var request = new ExportRequest() { Filters = filters };
 
             // act
             var result = designer.Export(request);
@@ -183,10 +186,61 @@ namespace TI.Nav.Utils.Test
             // assert
             Assert.True(result.Successful);
             Assert.Null(result.Exceptions.FirstOrDefault());
-            runner.Verify(x => x.RunCommand(It.IsAny<IObjectDesignerConfig>(), It.IsRegex(request.Filter)), Times.Once);
+            runner.Verify(x => x.RunCommand(It.IsAny<IObjectDesignerConfig>(), It.IsRegex(request.Filters.FirstOrDefault().Filter)), Times.Once);
         }
 
+        [Fact]
+        public void ExportWithMultipleFilters()
+        {
+            // arrange                        
+            var filters = new List<ExportFilter>(){
+                new ExportFilter() {FileName = "{0}_std.fob", Filter ="Version List=*NAVBIS*"}, 
+                new ExportFilter() {FileName = "{0}_std.txt", Filter ="Version List=*NAVBIS*"},
+                new ExportFilter() {FileName = "{0}_test.fob", Filter ="Version List=*NAVBIS*"},
+            };
 
+            var request = new ExportRequest() { Filters = filters };
+
+            string lastCommand = null;
+            var runner = new Mock<ICommandRunner>();
+            runner.Setup(x => x.RunCommand(It.IsAny<IObjectDesignerConfig>(), It.IsAny<string>()))
+                .Callback<IObjectDesignerConfig, string>((c, s) =>
+                    {
+                        lastCommand = s;
+                    });
+            var designer = new Nav2013R2(new ObjectDesignerConfig(), runner.Object);
+
+            // act
+            var result = designer.Export(request);
+
+            // assert
+
+            Assert.Equal(filters.Count(), result.Files.Count());
+            foreach (var f in filters)
+            {
+                Assert.NotNull(result.Files.ToList().FirstOrDefault(x => x == f.FileName));
+            }
+        }
+
+        [Fact]
+        public void ExportWithException()
+        {
+            // arrange
+            var request = new ExportRequest { Filters = new List<ExportFilter>() { new ExportFilter() } };
+            var runner = new Mock<ICommandRunner>();
+            runner.Setup(x => x.RunCommand(It.IsAny<IObjectDesignerConfig>(), It.IsAny<string>())).Throws<IOException>();
+            var designer = new Nav2013R2(new ObjectDesignerConfig(), runner.Object);
+
+            // act            
+            var result = designer.Export(request);
+
+            // assert
+            Assert.False(result.Successful);
+            Assert.NotNull(result.Exceptions.FirstOrDefault());
+
+        }
+
+        #region private
         private ImportRequest GetImportRequest()
         {
             return GetImportRequest(4);
@@ -203,5 +257,6 @@ namespace TI.Nav.Utils.Test
 
             return request;
         }
+        #endregion
     }
 }

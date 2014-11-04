@@ -19,7 +19,7 @@ namespace TI.Nav.Utils.Versions
             Log.Information("Export {@request}",request);
             var response = new ExportResponse() { Successful = true };
             
-            if (request.Filter == "error")
+            if (request.Filters != null && request.Filters.FirstOrDefault().Filter == "error")
             {
                 response.Successful = false;
                 var ex = new ObjectDesignerException("source", "error text");

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,8 +10,13 @@ namespace TI.Nav.Utils
 {
     public class ExportRequest
     {
-        public string Filter { get; set; }
-        public string FileName { get; set; }
+        private List<ExportFilter> mFilters = new List<ExportFilter>();
+                
+        public IEnumerable<ExportFilter> Filters
+        {
+            get { return mFilters; }
+            set { mFilters = value == null ? new List<ExportFilter>() : new List<ExportFilter>(value); }
+        }            
     }
 
     public class ExportResponse : IActionResponse
@@ -27,5 +33,6 @@ namespace TI.Nav.Utils
             }
         }
         public bool Successful { get; set; }
+        public string[] Files { get; set; }
     }
 }

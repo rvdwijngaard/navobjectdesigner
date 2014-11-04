@@ -24,23 +24,40 @@ namespace TI.Nav.Utils.Versions
         }
 
         public ExportResponse Export(ExportRequest config)
-        {
-            Log.Verbose("Exporting for config {@config}", config);
-            string cmd = string.Format("command=exportobjects, file=\"{0}\",servername={1},database={2},filter={3}", config.FileName, mConfig.Server, mConfig.Database, config.Filter);
-            string result = string.Empty;
+        {            
+            ExportResponse response = new ExportResponse() { Successful = true };
+            var queue = new ConcurrentQueue<ExportFilter>();
 
-            var response = new ExportResponse() { Successful = true };
-            try
+            Action<ExportFilter> export = (ExportFilter f) =>
             {
-                RunCommand(config.Filter, cmd);
-            }
-            catch (ObjectDesignerException ex)
-            {
-                Log.Verbose(ex, "Compilation Errors");
-                response.Exceptions.Add(ex);
-                response.Successful = false;
-            }
+                try
+                {                    
+                    queue.Enqueue(RunExport(config, f));
+                }
+                catch (Exception ex)
+                {
+                    Log.Verbose(ex, "Export Errors");
+                    response.Exceptions.Add(ex);
+                    response.Successful = false;
+                }
+            };
+            
+            Parallel.ForEach<ExportFilter>(config.Filters, export);
+
+            response.Files = queue.Select(x => { return x.FileName; }).ToArray();
+
             return response;
+        }
+
+        private ExportFilter RunExport(ExportRequest config, ExportFilter filter)
+        {
+            Log.Verbose("Exporting for config {@config} and filter {@filter}", config, filter);            
+
+            string cmd = string.Format("command=exportobjects, file=\"{0}\",servername={1},database={2},filter={3}", filter.FileName, mConfig.Server, mConfig.Database, filter.Filter);
+            
+            RunCommand(filter.Filter, cmd);
+
+            return filter;
         }
 
         internal virtual string ImportCommand(string command) { return command; }
@@ -83,13 +100,14 @@ namespace TI.Nav.Utils.Versions
         public CompileResponse Compile(CompileRequest request)
         {
             Log.Verbose("Compile all objects for request {@request}", request);
-            
+
             var response = new CompileResponse() { Successful = true };
-            var types = new List<string> { "Table", "Codeunit", "Page", "Report", "XMLport", "Query" };
-            string result = null;
-            
+            var types = new List<string> { "Table", "Codeunit", "Page", "Report", "XMLport", "Query", "MenuSuite" };
+            var queue = new ConcurrentQueue<Exception>();
+
             Action<string> compile = (string t) =>
                 {
+                    string result = null;
                     try
                     {
                         CompileObjectsForType(request, string.Format("Type={0}", t));
@@ -99,24 +117,23 @@ namespace TI.Nav.Utils.Versions
                         Log.Verbose(ex, "Compilation Errors");
                         response.Successful = false;
                         result = ex.Message;
-                    }
 
-                    if (!String.IsNullOrEmpty(result))
-                    {
                         const string expr = @"(\[\d*\](?<message>.*?)--) Object:\s(?<type>\w*)\s(?<id>\d*)\s(?<name>(\s|\w)*)";
                         foreach (Match m in Regex.Matches(result, expr, RegexOptions.Singleline))
                         {
                             Tuple<string, string> source = new Tuple<string, string>(GetValueFromMatch(m.Groups, "type"), GetValueFromMatch(m.Groups, "id"));
 
-                            var ex = new CompilationException(string.Format("{0} {1}", source.Item1, source.Item2), GetValueFromMatch(m.Groups, "message"));
-                            response.Exceptions.Add(ex);
-                            Log.Verbose(ex, "Compilation errors for object {@type} {@id}", source.Item1, source.Item2);
+                            var err = new CompilationException(string.Format("{0} {1}", source.Item1, source.Item2), GetValueFromMatch(m.Groups, "message"));
+                            queue.Enqueue(err);
+                            Log.Verbose(err, "Compilation errors for object {@type} {@id}", source.Item1, source.Item2);
                         }
                     }
                 };
 
             Parallel.ForEach<string>(types, compile);
             Log.Verbose("Compile all objects for {@request} completed", request);
+            
+            response.Exceptions = queue.ToList();
 
             return response;
         }

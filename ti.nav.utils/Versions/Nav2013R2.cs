@@ -14,6 +14,10 @@ namespace TI.Nav.Utils.Versions
         {
             return command += ",validatetablechanges=0";
         }
-        
+
+        internal override string CompileCommand(string command)
+        {
+            return command += ",validatetablechanges=0";
+        }
     }
 }
